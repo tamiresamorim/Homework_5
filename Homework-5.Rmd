@@ -1,0 +1,153 @@
+---
+title: "hm#5"
+author: "Tamires Amorim, Yamei Li and Meirou Guan and Carol"
+date: "11/2/2020"
+output: github_document
+
+---
+
+```{r}
+load("workspace.RData")
+```
+
+
+### Improving Regression Models to explain wages
+
+The goal on this project is to understand the variables chosen and how they affect the results. We will do that by experimenting regression models with different inputs to see if our assumptions contain important information for the explanation of wage.  
+
+First we loaded the data and subset it for the group chosen. The group contain African Americans in the workforce, ages between 25 and 55, working full time hours at least 48 weeks of the year. My interest in this particular group comes from reading the analysis on the racial wage gap in the New York times article "The Black-White Wage Gap Is as Big as It Was in 1950" By David Leonhardt.
+```{r setup, include=FALSE, echo = FALSE}
+load("~/R/acs2017_ny_data.RData")
+attach(acs2017_ny)
+use_varb <- (AGE >= 25) & (AGE <= 55) & (LABFORCE == 2) & (WKSWORK2 > 4) & (UHRSWORK >= 35) & (AfAm == 1)
+dat_use <- subset(acs2017_ny,use_varb) 
+attach(dat_use)
+require(stargazer)
+```
+
+
+#### Model1. Non-linear regression with one dummy variable (female):
+```{r}
+model1<-lm(INCWAGE~AGE+I(AGE^2)+female,data=dat_use)                                   
+summary(model1)
+stargazer(model1, type = "text")
+par(mfrow=c(2,2))
+plot(model1,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+ 
+
+```{r}
+confint(model1, level=0.95)
+```
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+a<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted1 <- data.frame(AGE = 25:55, female = 1)
+to_be_predicted1$yhat <- predict(model1, newdata = to_be_predicted1)
+lines(yhat ~ AGE, data = to_be_predicted1)
+```
+
+##### Observations from model1:
+
+1.  The p-value of AGE and AGE^2 are both less than 0.01 at confidence level, which indicates that they are statistically significant.
+2. The regression function is INCWAGE = f(age) = -35.342age^2 + 3468.278age - 5483.018 -22306.324, after doing the first derivative and set it equals to zero, we get -70.684 age + 3468.27 = 0 and (AGE=49).Which means that an 49-years-old African American female will reach  the peak of the predicted wage of $116,365.61. 
+3. We can be 95% confident that if there is in fact a relationship between income, age and gender, because they all fall between our confidence interval, indicating a relationship that works in this model, although, when we take the small multiple R2 into consideration, we see the model does not do very well at predicting income based on the variables of age and gender, as cited in class "R is doing something, but not doing much".
+4. The residuals shows the unexplained variance across the range of the model, each plot gave us the information about the model fit or (the red line representing the mean of the residuals that should be horizontal and centered on zero, as indicated below), this indicates that there is not a lot of outliers causing bias in the model. 
+
+```{r}
+summary(residuals(model1))
+```
+
+#### Model2. Non-linear regression with more dummies (female, African American, and education from high school to advanced degree):
+```{r}
+## Estimating income With more dummies.
+model2 <-lm(INCWAGE~AGE+I(AGE^2)+female+AfAm+educ_hs+educ_somecoll+educ_college+educ_advdeg,data=dat_use)  
+summary(model2)
+stargazer(model2, type = "text")
+par(mfrow=c(2,2))
+plot(model2,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+```{r}
+confint(model2, level=0.95)
+```
+
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+a<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted1 <- data.frame(AGE = 25:55, female = 1, AfAm = 1, educ_hs = 0, educ_somecoll = 0, educ_college = 1, educ_advdeg = 0)
+to_be_predicted1$yhat <- predict(model2, newdata = to_be_predicted1)
+lines(yhat ~ AGE, data = to_be_predicted1)
+```
+
+##### Observations from model2:
+
+1. The variable Afam was dropped by R, because it is already on the subset, my guess is that I cannot use African American to explain African American in a regression, it is very redundant.  
+2. The AGE^2 and education high school became less statistically significant when we added higher degrees of education, probably because the relation between higher education and better income is stronger than those indicators.  
+3. All the variables still fall between our confidence interval of 95%, indicating a relationship that works in this model, although, for age, age^2 and gender its boundaries got bigger than the first model, possibly due to the increase in the variables taken into account, the multiple R^2 had a slightly increase as well.
+4. Differently from the first model, when we look at the residuals now, it seems that with the increase in the dummy variables we have more outliers, since the mean is not a very nice horizontal line close to zero in each plot.
+
+
+#### Model3. Adding higher order polynomial terms of age with one dummy variable (female):
+```{r}
+## Adding higher polynomial terms of age
+model3<-lm(INCWAGE~AGE+I(AGE^2)+I(AGE^3)+I(AGE^4)+female,data=dat_use)
+summary(model3)
+stargazer(model3, type = "text")
+par(mfrow=c(2,2))
+plot(model3,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+
+```{r}
+NNobs <- length(INCWAGE)
+set.seed(12345) 
+graph_obs <- (runif(NNobs) < 0.1) 
+dat_graph <-subset(dat_use,graph_obs) 
+a<-plot(INCWAGE ~ jitter(AGE, factor = 2), pch = 16, col = rgb(0.5, 0.7, 0.8, alpha = 0.8), ylim = c(0,150000), data = dat_graph)
+to_be_predicted1 <- data.frame(AGE = 25:55, female = 1)
+to_be_predicted1$yhat <- predict(model3, newdata = to_be_predicted1)
+lines(yhat ~ AGE, data = to_be_predicted1)
+```
+
+```{r}
+confint(model3, level=0.95)
+```
+
+##### Observations from model3:
+
+1. The polynomials now account for the outliers we saw on model2, although they are not statistically significant when we look into the stargaze summary,  the only variable that explains wage is gender. 
+2. For the confidence interval all the variables went into smaller numbers in the boundaries which raised questions I still do not fully understand.  
+3. when we look into the R^2, it contains the same information in model1, which implies that model3 has the same evaluation capacity as model1.
+
+
+#### Model4. Adding log to age with one dummy variable (female):
+```{r}
+## experiment of colinearity
+model4<-lm(INCWAGE~log(AGE)+I(log(AGE^2))+I(log(AGE^3))+I(log(AGE^4))+female,data=dat_use)
+summary(model4)
+stargazer(model3, type = "text")
+par(mfrow=c(2,2))
+plot(model3,col="grey",pch=16,cex=1,lwd=1,lty=2)
+```
+
+
+##### Observations from model4:
+
+1. When we insert the log in age it is possible to observe the percentage change we did not observe on model 1, in age predicting the income. However, adding log to polynomials was useless. Confirmed by the same R^2 as model 1. My guess is that explaining wage by the percentage change increase in age is not useful for the model, since people do not get higher income just because they got older, there are more variables that should be taken into consideration, for instance, if a younger person receives a raise in their job because of productivity not because of aging. 
+
+
+```{r}
+detach()
+```
+
+```{r}
+save.image("workspace.RData")
+```
+
