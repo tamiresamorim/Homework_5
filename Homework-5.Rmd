@@ -3,7 +3,6 @@ title: "hm#5"
 author: "Tamires Amorim, Yamei Li and Meirou Guan and Carol"
 date: "11/2/2020"
 output: github_document
-
 ---
 
 ```{r}
