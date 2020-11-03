@@ -1,5 +1,4 @@
 # Homework_5
-hm\#5
 ================
 Tamires Amorim, Yamei Li and Meirou Guan and Carol
 11/2/2020
