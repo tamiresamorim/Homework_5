@@ -1,4 +1,4 @@
-# Homework_5
+# Improving Regression Models to explain wages (HM5)
 ================
 Tamires Amorim, Yamei Li and Meirou Guan and Carol
 11/2/2020
